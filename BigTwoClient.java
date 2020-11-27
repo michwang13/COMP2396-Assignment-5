@@ -314,7 +314,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			// Validate chosen cards
 			if (lastHandOnTable == null) {
 				if (composedHand == null) {
-//					String msg = selectedCards.toString() + " <== Not a legal move!!";
 					String msg = "Not a legal move!!";
 					table.printMsg(msg);
 					return;
@@ -326,7 +325,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			}
 			else {
 				if (composedHand == null) {
-//					String msg = selectedCards.toString() + " <== Not a legal move!!";
 					String msg = "Not a legal move!!";
 					table.printMsg(msg);
 					return;
@@ -585,7 +583,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				break;
 			
 		}
-
 	}
 
 	
