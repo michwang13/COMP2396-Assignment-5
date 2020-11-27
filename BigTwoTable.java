@@ -1,4 +1,5 @@
 import javax.swing.*;
+
 import java.util.ArrayList;
 
 import java.awt.BorderLayout;
@@ -36,6 +37,7 @@ public class BigTwoTable implements CardGameTable {
 	private Image[][] cardImages;		// a 2D array storing the images for the faces of the cards
 	private Image cardBackImage;		// an image for the backs of the cards
 	private Image[] avatars;			// an array storing the images for the avatars
+	
 	
 	/**
 	 * A method to assign images to avatars
@@ -125,45 +127,53 @@ public class BigTwoTable implements CardGameTable {
 		
 		// Set Menu Bar
 		JMenuBar menuBar = new JMenuBar();
-		JMenu menu = new JMenu("Menu");
+		JMenu gameMenu = new JMenu("Game");
 		JMenuItem connectMenuItem = new JMenuItem("Connect");
 		JMenuItem quitMenuItem = new JMenuItem("Quit");
 		connectMenuItem.addActionListener(new ConnectMenuItemListener());
 		quitMenuItem.addActionListener(new QuitMenuItemListener());
-		menu.add(connectMenuItem);
-		menu.add(quitMenuItem);
-		menuBar.add(menu);
+		gameMenu.add(connectMenuItem);
+		gameMenu.add(quitMenuItem);
+		JMenu messageMenu = new JMenu("Message");
+		JMenuItem testMenuItem = new JMenuItem("Test");
+		//jgn lupa tambahin actionlistener, jangan lupa remove(?)
+		messageMenu.add(testMenuItem);
+		menuBar.add(gameMenu);
+		menuBar.add(messageMenu);
 		frame.setJMenuBar(menuBar);
 		
-		// Set Button Panel
-		JPanel buttonPanel = new JPanel();
+		// Set Bottom Panel
+		JPanel bottomPanel = new JPanel();
+		JLabel messageFieldLabel = new JLabel("Message: ");
+		chatMsgField = new JTextField(20);
+		chatMsgField.addActionListener(new ChatMsgFieldListener());
 		playButton = new JButton("Play");
 		passButton = new JButton("Pass");
-		buttonPanel.add(playButton);
-		buttonPanel.add(passButton);
-		frame.add(buttonPanel, BorderLayout.SOUTH);
+		bottomPanel.add(playButton);
+		bottomPanel.add(passButton);
+		bottomPanel.add(messageFieldLabel);
+		bottomPanel.add(chatMsgField);
+		frame.add(bottomPanel, BorderLayout.SOUTH);
 		
-		// Set Message Area	
+		// Set Right Panel
+		JPanel rightPanel = new JPanel();
+		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
 		msgArea = new JTextArea(5,27);
 		msgArea.setLineWrap(true);
 		JScrollPane msgAreaScroller = new JScrollPane(msgArea);
-		frame.add(msgAreaScroller, BorderLayout.EAST);
-	
-		
-		//TODO: ADD CHAT MESSAGE AREA AND CHAT MESSAGE FIELD INTO THE FRAME
-		
-		// Set Chat Message Area
 		chatMsgArea = new JTextArea(5,27);
 		chatMsgArea.setLineWrap(true);
 		JScrollPane chatMsgAreaScroller = new JScrollPane(chatMsgArea);
-		frame.add(chatMsgAreaScroller);
+		rightPanel.add(msgAreaScroller);
+		rightPanel.add(chatMsgAreaScroller);
+		frame.add(rightPanel, BorderLayout.EAST);	
 		
-		// Set Chat Message Field
-		chatMsgField = new JTextField("Message:");
-		chatMsgField.addActionListener(new ChatMsgFieldListener());
-		frame.add(chatMsgField);
+
+		// Set BigTwoPanel
+		bigTwoPanel = new BigTwoPanel();
+		frame.add(bigTwoPanel);
 		
-		
+//		bigTwoPanel.setSize(600, 700);
 		
 		frame.setSize(800, 700);
 		frame.setVisible(true);
@@ -216,16 +226,18 @@ public class BigTwoTable implements CardGameTable {
 	 * A method for repainting the GUI
 	 */
 	public void repaint() {
-		frame.removeMouseListener((MouseListener) bigTwoPanel);
-		for (MouseListener ml : frame.getMouseListeners()) {
-			frame.removeMouseListener(ml);
-		}
-		bigTwoPanel = null;
-		bigTwoPanel = new BigTwoPanel();
-		bigTwoPanel.setSize(600, 700);
-		
-		frame.addMouseListener((MouseListener) bigTwoPanel);
-		frame.add(bigTwoPanel);
+//		frame.removeMouseListener((MouseListener) bigTwoPanel);
+//		for (MouseListener ml : frame.getMouseListeners()) {
+//			frame.removeMouseListener(ml);
+//		}
+//		bigTwoPanel = null;
+//		bigTwoPanel = new BigTwoPanel();
+//		bigTwoPanel.setSize(600, 700);
+//		
+//		frame.addMouseListener((MouseListener) bigTwoPanel);
+//		frame.add(bigTwoPanel);
+		System.out.println("weng");
+		frame.repaint();
 		frame.setSize(900, 700);
 		frame.setVisible(true);
 	}
@@ -248,6 +260,23 @@ public class BigTwoTable implements CardGameTable {
 	}
 	
 	/**
+	 * A method for printing the specified string to 
+	 * the chat message area of the GUI.
+	 * @param msg string to be printed
+	 */
+	public void printChatMsg(String msg) {
+		chatMsgArea.append(msg);
+		chatMsgArea.append("\n");
+	}
+	
+	/**
+	 * A method for clearing the c=hat message area of the GUI
+	 */
+	public void clearChatMsgArea() {
+		chatMsgArea.setText("");
+	}
+	
+	/**
 	 * A method for resetting the GUI. Reset the list of selected cards,
 	 * clear the message area, and enable user interactions
 	 */
@@ -267,6 +296,7 @@ public class BigTwoTable implements CardGameTable {
 		passButton.setEnabled(true);
 		playButton.addActionListener(new PlayButtonListener());
 		passButton.addActionListener(new PassButtonListener());
+		frame.addMouseListener((MouseListener) bigTwoPanel);
 		
 		//TODO: PERLU ADD ACTION LISTENER BUAT CHATMSGAREA GAK?
 	}
@@ -285,6 +315,7 @@ public class BigTwoTable implements CardGameTable {
 		for (ActionListener al : passButton.getActionListeners()) {
 			passButton.removeActionListener(al);
 		}
+		frame.removeMouseListener((MouseListener) bigTwoPanel);
 	
 		//TODO: PERLU REMOVE ACTION LISTENER BUAT CHATMSGAREA GAK?
 	}
@@ -299,7 +330,8 @@ public class BigTwoTable implements CardGameTable {
 	 */
 	private void drawAvatar(Graphics g, int playerIdx, int x, int y, ImageObserver observer) {
 		g.setColor(Color.BLACK);
-		g.drawString("Player " + playerIdx, x, y);
+		String playerName = game.getPlayerList().get(playerIdx).getName();
+		g.drawString(playerName, x, y);
 		Image image = avatars[playerIdx];
 		g.drawImage(image, x, y+10, observer);
 
@@ -383,18 +415,32 @@ public class BigTwoTable implements CardGameTable {
 			super.paintComponent(g);
 			g.setColor(Color.GREEN);
 			g.fillRect(0, 0, 600, 700);
-			drawAvatar(g, 0, 60, 20, this);
-			drawAvatar(g, 1, 60, 150, this);
-			drawAvatar(g, 2, 60, 280, this);
-			drawAvatar(g, 3, 60, 410, this);
-			drawPlayerCards(g, 0, 180, 40, this);
-			drawPlayerCards(g, 1, 180, 170, this);
-			drawPlayerCards(g, 2, 180, 300, this);
-			drawPlayerCards(g, 3, 180, 430, this);
-			
-			Hand lastHandOnTable = (game.getHandsOnTable().isEmpty()) ? null : game.getHandsOnTable()
-					.get(game.getHandsOnTable().size() - 1);
-			drawLastHand(g, lastHandOnTable, 180, 520, this);			
+//			drawAvatar(g, 0, 60, 20, this);
+//			drawAvatar(g, 1, 60, 150, this);
+//			drawAvatar(g, 2, 60, 280, this);
+//			drawAvatar(g, 3, 60, 410, this);
+//			drawPlayerCards(g, 0, 180, 40, this);
+//			drawPlayerCards(g, 1, 180, 170, this);
+//			drawPlayerCards(g, 2, 180, 300, this);
+//			drawPlayerCards(g, 3, 180, 430, this);
+//			
+			System.out.println("printingigoisd");
+
+			if (game.getPlayerList().get(0).getName() != null) {
+				System.out.println(game.getPlayerList().get(0).getName());
+			}
+			//			for (int i = 0; i < 4; i++) {
+//				if (game.getPlayerList().get(i).getName() != ""){
+//					System.out.println(game.getPlayerList().get(i).getName());
+//					drawAvatar(g, i, 60, 20+130*i, this);
+//					drawPlayerCards(g, i, 180, 40+130*i, this);
+//				}
+//			}
+//			
+//			
+//			Hand lastHandOnTable = (game.getHandsOnTable().isEmpty()) ? null : game.getHandsOnTable()
+//					.get(game.getHandsOnTable().size() - 1);
+//			drawLastHand(g, lastHandOnTable, 180, 520, this);			
 
 		}
 		

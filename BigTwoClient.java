@@ -43,12 +43,23 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		CardGamePlayer player2 = new CardGamePlayer();
 		CardGamePlayer player3 = new CardGamePlayer();
 		CardGamePlayer player4 = new CardGamePlayer();
+		player1.setName("");
+		player2.setName("");
+		player3.setName("");
+		player4.setName("");
 		playerList.add(player1);
 		playerList.add(player2);
 		playerList.add(player3);
 		playerList.add(player4);
 		
 		table = new BigTwoTable(this);
+		JFrame frameEnterName = new JFrame();
+		playerName = new String();
+		playerName = JOptionPane.showInputDialog(frameEnterName, "Enter name: ");	
+//		while (playerName == null || playerName == "") {
+//			playerName = JOptionPane.showInputDialog(frameEnterName, "Enter name: ");	
+//		}
+		makeConnection();
 		
 	}
 	/**
@@ -59,11 +70,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 	 */
 	public static void main(String[] args) {
 		BigTwoClient bigTwo = new BigTwoClient();
-		BigTwoDeck bigTwoDeck = new BigTwoDeck();
-		bigTwoDeck.shuffle();
-		bigTwo.start(bigTwoDeck);
-	
-		
 	}
 	
 	/**
@@ -249,13 +255,7 @@ public class BigTwoClient implements CardGame, NetworkGame{
 	 * 
 	 */
 	public void makeMove(int playerID, int[] cardIdx) {
-		//When the local player makes a move during a game, the client should send a message
-//		of the type MOVE, with playerID and data being -1 and a reference to a regular array of
-//		integers
-		
-		// lho kok dia suruh playerID = -1???
-		
-		CardGameMessage message = new CardGameMessage(CardGameMessage.MOVE, playerID, cardIdx);
+		CardGameMessage message = new CardGameMessage(CardGameMessage.MOVE, -1, cardIdx);
 		sendMessage(message);
 	}
 	
@@ -433,11 +433,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 	 *
 	 */
 	public void start(Deck deck) {
-		JFrame frameEnterName = new JFrame();
-		playerName = new String();
-		playerName = JOptionPane.showInputDialog(frameEnterName, "Enter name: ");
-		makeConnection();
-		
 		this.deck = deck;
 		for (int i = 0; i < 4; i++) {
 			playerList.get(i).removeAllCards();
@@ -452,8 +447,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		table.reset();		
 		table.printMsg("Player " + currentIdx + "'s turn:");
 		table.repaint();
-		
-		
 	}
 	
 	@Override
@@ -493,17 +486,13 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		try {
 			sock = new Socket("127.0.0.1", 2396);	
 //			sock = new Socket(serverIP, serverPort);
-			ObjectOutputStream oos = new ObjectOutputStream(sock.getOutputStream());
-			CardGameMessage cardGameMessageJoin = new CardGameMessage(CardGameMessage.JOIN, -1, playerName);
-			sendMessage(cardGameMessageJoin);
+			oos = new ObjectOutputStream(sock.getOutputStream());
+			table.printMsg("Connected to server at /127.0.0.1:2396");
+			Thread readerThread = new Thread(new ServerHandler());
+			readerThread.start();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}		
-		Thread readerThread = new Thread(new ServerHandler());
-		readerThread.start();
-		CardGameMessage cardGameMessageReady = new CardGameMessage(CardGameMessage.READY, -1, null);	
-		sendMessage(cardGameMessageReady);
-		
 
 	}
 	@Override
@@ -519,59 +508,71 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				break;
 				
 			case CardGameMessage.PLAYER_LIST:
-				//Set the playerID and 
+				// Set the playerID and 
 				this.playerID = message.getPlayerID();			
 				
-				// update the names in the player list
+				// Update the names in the player list
 				String[] playerNames = (String[]) message.getData();
 				for (int i = 0; i < playerNames.length; i++) {
 					if (playerNames[i] == null) {
 						playerList.get(i).setName(playerNames[i]);
 					}
 				}
+
+				// Send join message
+				CardGameMessage joinMessage = new CardGameMessage(CardGameMessage.JOIN, -1, playerName);
+				sendMessage(joinMessage);
+				table.repaint();
+				
 				break;
+				
 			case CardGameMessage.JOIN:
-				// update the names in the player list
+				// Update the names in the player list
 				int joiningPlayerID = message.getPlayerID();
 				String joiningPlayerName = (String) message.getData();
-				playerList.get(joiningPlayerID).setName(joiningPlayerName);;
+				playerList.get(joiningPlayerID).setName(joiningPlayerName);
+				if (joiningPlayerID == playerID) {
+					CardGameMessage readyMessage = new CardGameMessage(CardGameMessage.READY, -1, null);
+					sendMessage(readyMessage);
+				}
 				break;
+				
 			case CardGameMessage.FULL:
 				table.printMsg("Server is full, cannot join the game.");
 				break;
+				
 			case CardGameMessage.QUIT:
 				int quittingPlayerID = message.getPlayerID();
-				String quittingPlayerName = (String) message.getData();
+				String quittingPlayerName = playerList.get(quittingPlayerID).getName();
+				table.printMsg(quittingPlayerName + " leaves the game.");
 				playerList.get(quittingPlayerID).setName("");
-//				Data is a reference to a string representing the IP address and TCP port of this
-//				player (e.g., "/127.0.0.1:9394"). If a game is in progress, the client should stop the
-//				game and then send a message of type READY, with playerID and data being -1 and
-//				null, respectively, to the server
+				for (int i = 0; i < 4; i++) {
+					if (playerList.get(i).getName() != "") {
+						table.printMsg(playerList.get(i).getName() + " is ready.");
+					}
+				}
 				break;
 				
 			case CardGameMessage.READY:
 				int readyPlayerID = message.getPlayerID();
-				table.printMsg("Player " + readyPlayerID + " is ready.");
+				table.printMsg(playerList.get(readyPlayerID).getName() + " is ready.");
 				break;
 			
 			case CardGameMessage.START:
-				BigTwoDeck newDeck = new BigTwoDeck();
-				newDeck.shuffle();
-				start(newDeck);
+				BigTwoDeck playedDeck = (BigTwoDeck) message.getData();
+				start(playedDeck);
 				break;
 			
-		
 			case CardGameMessage.MSG:
-				//the client should display
-//				the chat message in the chat window. 
-//				table.printChatMsg(message.getData());
+				String chatMsg = (String) message.getData();
+				table.printChatMsg(chatMsg);
+				break;
 			
 		}
-		if (messageType == CardGameMessage.MOVE) {
 
-		}
-//		else if .......... messageType == .. dst
 	}
+
+	
 	@Override
 	public void sendMessage(GameMessage message) {
 		try {
@@ -593,17 +594,15 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			ois = new ObjectInputStream(sock.getInputStream());
 				while ((message = (CardGameMessage) ois.readObject()) != null) {
 					System.out.println("read " + message);
+					System.out.println("read " + message.getType());
 					parseMessage(message);
+					
 				}
 			} catch (Exception ex) {
 				ex.printStackTrace();
 			}
-			
-		}	
-		
-		
+		}
 	}
-	
 }
 
 	
