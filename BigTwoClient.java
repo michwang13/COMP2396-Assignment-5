@@ -352,20 +352,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		printTurn(composedHand, true);
 		
 		if (endOfGame()) {
-			table.disable();
-			
-			// NANTI INI KALO DAH KELAR JGN LUPA DI DELETE YG PRINT DI TABLE. PAKE JOPTION PANE AJA
-			
-			table.printMsg("Game ends");
-			for (int i = 0; i < 4; i++) {
-				CardGamePlayer tempPlayer = playerList.get(i);
-				if (tempPlayer.getNumOfCards() == 0) {
-					table.printMsg(tempPlayer.getName() + " wins the game.");
-					continue;
-				}
-				table.printMsg(tempPlayer.getName() + " has " + tempPlayer.getNumOfCards() + " in hand.");
-			}
-
 			String messageDialogBox = "";
 			messageDialogBox += "Game ends\n";
 			for (int i = 0; i < 4; i++) {
@@ -376,15 +362,14 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				}
 				messageDialogBox = messageDialogBox + tempPlayer.getName() + " has " + tempPlayer.getNumOfCards() + " in hand.\n";
 			}
+			table.resetSelected();
+			table.repaint();			
 			
-			JFrame frameEndOfGame = new JFrame();
-//			int okIsPressed = JOptionPane.showConfirmDialog(frameEndOfGame, messageDialogBox);
-			
+			JFrame frameEndOfGame = new JFrame();			
 			JOptionPane.showMessageDialog(frameEndOfGame, messageDialogBox);
 			CardGameMessage endOfGameMessage = new CardGameMessage(CardGameMessage.READY, -1, null);
 			sendMessage(endOfGameMessage);
-			// by design, the lines under JOptionPane.showMessageDialog() will not run until the ok button is clicked
-			// BUT WHAT IF THE CLOSE BUTTON IS CLICKED INSTEAD?
+
 		}
 		else {
 			currentIdx = (currentIdx + 1) % 4;	
@@ -397,10 +382,9 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				table.printMsg(playerList.get(currentIdx).getName() + "'s turn:");					
 				table.disable();
 			}
+			table.resetSelected();
+			table.repaint();
 		}
-		
-		table.resetSelected();
-		table.repaint();
 	}
 	
 	/**
