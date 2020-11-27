@@ -134,12 +134,7 @@ public class BigTwoTable implements CardGameTable {
 		quitMenuItem.addActionListener(new QuitMenuItemListener());
 		gameMenu.add(connectMenuItem);
 		gameMenu.add(quitMenuItem);
-		JMenu messageMenu = new JMenu("Message");
-		JMenuItem testMenuItem = new JMenuItem("Test");
-		//jgn lupa tambahin actionlistener, jangan lupa remove(?)
-		messageMenu.add(testMenuItem);
 		menuBar.add(gameMenu);
-		menuBar.add(messageMenu);
 		frame.setJMenuBar(menuBar);
 		
 		// Set Bottom Panel
@@ -158,10 +153,10 @@ public class BigTwoTable implements CardGameTable {
 		// Set Right Panel
 		JPanel rightPanel = new JPanel();
 		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
-		msgArea = new JTextArea(5,27);
+		msgArea = new JTextArea(6,27);
 		msgArea.setLineWrap(true);
 		JScrollPane msgAreaScroller = new JScrollPane(msgArea);
-		chatMsgArea = new JTextArea(5,27);
+		chatMsgArea = new JTextArea(6,27);
 		chatMsgArea.setLineWrap(true);
 		JScrollPane chatMsgAreaScroller = new JScrollPane(chatMsgArea);
 		rightPanel.add(msgAreaScroller);
@@ -169,10 +164,10 @@ public class BigTwoTable implements CardGameTable {
 		frame.add(rightPanel, BorderLayout.EAST);	
 		
 
-		// Set BigTwoPanel
-		bigTwoPanel = new BigTwoPanel();
-		frame.add(bigTwoPanel);
-		
+//		// Set BigTwoPanel
+//		bigTwoPanel = new BigTwoPanel();
+//		frame.add(bigTwoPanel);
+//		
 //		bigTwoPanel.setSize(600, 700);
 		
 		frame.setSize(800, 700);
@@ -186,7 +181,6 @@ public class BigTwoTable implements CardGameTable {
 	 */
 	public void setActivePlayer(int activePlayer) {
 		this.activePlayer = activePlayer;
-		
 	}
 	
 	/**
@@ -226,18 +220,14 @@ public class BigTwoTable implements CardGameTable {
 	 * A method for repainting the GUI
 	 */
 	public void repaint() {
-//		frame.removeMouseListener((MouseListener) bigTwoPanel);
-//		for (MouseListener ml : frame.getMouseListeners()) {
-//			frame.removeMouseListener(ml);
-//		}
-//		bigTwoPanel = null;
-//		bigTwoPanel = new BigTwoPanel();
-//		bigTwoPanel.setSize(600, 700);
-//		
-//		frame.addMouseListener((MouseListener) bigTwoPanel);
-//		frame.add(bigTwoPanel);
-		System.out.println("weng");
-		frame.repaint();
+		frame.removeMouseListener((MouseListener) bigTwoPanel);
+		for (MouseListener ml : frame.getMouseListeners()) {
+			frame.removeMouseListener(ml);
+		}
+		bigTwoPanel = new BigTwoPanel();
+//		bigTwoPanel.setPreferredSize(new Dimension(600, 700));
+		frame.addMouseListener((MouseListener) bigTwoPanel);
+		frame.add(bigTwoPanel);
 		frame.setSize(900, 700);
 		frame.setVisible(true);
 	}
@@ -292,12 +282,17 @@ public class BigTwoTable implements CardGameTable {
 	 * for selection of cards through mouse clicks
 	 */
 	public void enable() {
-		playButton.setEnabled(true);
-		passButton.setEnabled(true);
+		for (ActionListener al : playButton.getActionListeners()) {
+			playButton.removeActionListener(al);
+		}
+		for (ActionListener al : passButton.getActionListeners()) {
+			passButton.removeActionListener(al);
+		}
+		frame.removeMouseListener((MouseListener) bigTwoPanel);
+		
 		playButton.addActionListener(new PlayButtonListener());
 		passButton.addActionListener(new PassButtonListener());
 		frame.addMouseListener((MouseListener) bigTwoPanel);
-		
 		//TODO: PERLU ADD ACTION LISTENER BUAT CHATMSGAREA GAK?
 	}
 	
@@ -307,8 +302,6 @@ public class BigTwoTable implements CardGameTable {
 	 * for selection of cards through mouse clicks
 	 */
 	public void disable() {
-		playButton.setEnabled(false);
-		passButton.setEnabled(false);
 		for (ActionListener al : playButton.getActionListeners()) {
 			playButton.removeActionListener(al);
 		}
@@ -316,6 +309,7 @@ public class BigTwoTable implements CardGameTable {
 			passButton.removeActionListener(al);
 		}
 		frame.removeMouseListener((MouseListener) bigTwoPanel);
+
 	
 		//TODO: PERLU REMOVE ACTION LISTENER BUAT CHATMSGAREA GAK?
 	}
@@ -347,21 +341,27 @@ public class BigTwoTable implements CardGameTable {
 	 */
 	private void drawPlayerCards(Graphics g, int playerIdx, int x, int y, ImageObserver observer) {
 		CardList playerCards = game.getPlayerList().get(playerIdx).getCardsInHand();
-		if (playerIdx != activePlayer) {
+
+		if (playerIdx == game.getPlayerID()) {
 			for (int i = 0; i < playerCards.size(); i++) {
-				g.drawImage(cardBackImage, x+25*i, y, observer);
+				int playerCardSuit = playerCards.getCard(i).getSuit();
+				int playerCardRank = playerCards.getCard(i).getRank();
+				if (this.activePlayer == game.getPlayerID()) {
+					if (selected[i]) {
+						g.drawImage(cardImages[playerCardSuit][playerCardRank], x+25*i, y-20, observer);
+					}
+					else {
+						g.drawImage(cardImages[playerCardSuit][playerCardRank], x+25*i, y, observer);
+					}
+				}
+				else {
+					g.drawImage(cardImages[playerCardSuit][playerCardRank], x+25*i, y, observer);
+				}
 			}
 		}
 		else {
 			for (int i = 0; i < playerCards.size(); i++) {
-				int playerCardSuit = playerCards.getCard(i).getSuit();
-				int playerCardRank = playerCards.getCard(i).getRank(); 
-				if (selected[i]) {
-					g.drawImage(cardImages[playerCardSuit][playerCardRank], x + 25*i, y-20, observer);					
-				}
-				else {
-					g.drawImage(cardImages[playerCardSuit][playerCardRank], x + 25*i, y, observer);
-				}
+				g.drawImage(cardBackImage,  x+25*i,  y,  observer);
 			}
 		}
 	}	
@@ -424,23 +424,16 @@ public class BigTwoTable implements CardGameTable {
 //			drawPlayerCards(g, 2, 180, 300, this);
 //			drawPlayerCards(g, 3, 180, 430, this);
 //			
-			System.out.println("printingigoisd");
 
-			if (game.getPlayerList().get(0).getName() != null) {
-				System.out.println(game.getPlayerList().get(0).getName());
+			for (int i = 0; i < 4; i++) {
+				if (game.getPlayerList().get(i).getName() != ""){
+					drawAvatar(g, i, 60, 20+130*i, this);
+					drawPlayerCards(g, i, 180, 40+130*i, this);
+				}
 			}
-			//			for (int i = 0; i < 4; i++) {
-//				if (game.getPlayerList().get(i).getName() != ""){
-//					System.out.println(game.getPlayerList().get(i).getName());
-//					drawAvatar(g, i, 60, 20+130*i, this);
-//					drawPlayerCards(g, i, 180, 40+130*i, this);
-//				}
-//			}
-//			
-//			
-//			Hand lastHandOnTable = (game.getHandsOnTable().isEmpty()) ? null : game.getHandsOnTable()
-//					.get(game.getHandsOnTable().size() - 1);
-//			drawLastHand(g, lastHandOnTable, 180, 520, this);			
+			Hand lastHandOnTable = (game.getHandsOnTable().isEmpty()) ? null : game.getHandsOnTable()
+					.get(game.getHandsOnTable().size() - 1);
+			drawLastHand(g, lastHandOnTable, 180, 520, this);			
 
 		}
 		
@@ -505,7 +498,7 @@ public class BigTwoTable implements CardGameTable {
 			CardGamePlayer currentPlayer = game.getPlayerList().get(activePlayer);
 			int currentPlayerNumOfCards = currentPlayer.getNumOfCards();
 
-			if (y >= 75+(activePlayer*130) && y <= 165+(activePlayer*130)) {
+			if (y >= 75+(game.getPlayerID()*130) && y <= 165+(game.getPlayerID()*130)) {
 				if (x >= 190 && x <= 190+(25*(currentPlayerNumOfCards+1))) {
 					checkCardSelected(x, y, currentPlayer, currentPlayerNumOfCards);
 				}

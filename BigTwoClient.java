@@ -69,7 +69,7 @@ public class BigTwoClient implements CardGame, NetworkGame{
 	 * 
 	 */
 	public static void main(String[] args) {
-		BigTwoClient bigTwo = new BigTwoClient();
+		BigTwoClient bigTwoClient = new BigTwoClient();
 	}
 	
 	/**
@@ -287,13 +287,21 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		if (cardIdx.length == 0) {
 			// Player passes his turn
 			if (isNewRound) {
-				table.printMsg("{pass} <== Not a valid move!!");
+//				table.printMsg("{pass} <== Not a legal move!!");
+				table.printMsg("Not a legal move!!");
 			}
 			else {
-				table.printMsg("{pass}");
+				table.printMsg("{Pass}");
 				currentIdx = (currentIdx + 1) % 4;
 				table.setActivePlayer(currentIdx);
-				table.printMsg("Player " + currentIdx + "'s turn:");
+				if (currentIdx == this.playerID) {
+					table.printMsg("Your turn:");
+					table.enable();
+				}
+				else {
+					table.printMsg(playerList.get(currentIdx).getName() + "'s turn:");					
+					table.disable();
+				}
 			}
 			table.resetSelected();
 			table.repaint();
@@ -306,7 +314,8 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			// Validate chosen cards
 			if (lastHandOnTable == null) {
 				if (composedHand == null) {
-					String msg = selectedCards.toString() + " <== Not a legal move!!";
+//					String msg = selectedCards.toString() + " <== Not a legal move!!";
+					String msg = "Not a legal move!!";
 					table.printMsg(msg);
 					return;
 				}
@@ -317,7 +326,8 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			}
 			else {
 				if (composedHand == null) {
-					String msg = selectedCards.toString() + " <== Not a legal move!!";
+//					String msg = selectedCards.toString() + " <== Not a legal move!!";
+					String msg = "Not a legal move!!";
 					table.printMsg(msg);
 					return;
 				}
@@ -379,7 +389,14 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		else {
 			currentIdx = (currentIdx + 1) % 4;	
 			table.setActivePlayer(currentIdx);
-			table.printMsg("Player " + currentIdx + "'s turn:");
+			if (currentIdx == this.playerID) {
+				table.printMsg("Your turn:");
+				table.enable();
+			}
+			else {
+				table.printMsg(playerList.get(currentIdx).getName() + "'s turn:");					
+				table.disable();
+			}
 		}
 		
 		table.resetSelected();
@@ -396,7 +413,7 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			table.printMsg(msg);
 		}
 		else {
-			String msg = "{" + composedHand.getType() + "} " + composedHand.toString() + " <== Not a legal move!!";
+			String msg = "Not a legal move!!";
 			table.printMsg(msg);
 		}
 	}
@@ -445,7 +462,15 @@ public class BigTwoClient implements CardGame, NetworkGame{
 		table.disable();
 		table.setActivePlayer(currentIdx);
 		table.reset();		
-		table.printMsg("Player " + currentIdx + "'s turn:");
+		table.printMsg("All players are ready. Game starts.");
+		if (currentIdx == this.playerID) {
+			table.printMsg("Your turn:");
+			table.enable();
+		}
+		else {
+			table.printMsg(playerList.get(currentIdx).getName() + "'s turn:");					
+			table.disable();
+		}
 		table.repaint();
 	}
 	
@@ -485,7 +510,6 @@ public class BigTwoClient implements CardGame, NetworkGame{
 	public void makeConnection() {
 		try {
 			sock = new Socket("127.0.0.1", 2396);	
-//			sock = new Socket(serverIP, serverPort);
 			oos = new ObjectOutputStream(sock.getOutputStream());
 			table.printMsg("Connected to server at /127.0.0.1:2396");
 			Thread readerThread = new Thread(new ServerHandler());
@@ -510,11 +534,11 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			case CardGameMessage.PLAYER_LIST:
 				// Set the playerID and 
 				this.playerID = message.getPlayerID();			
-				
 				// Update the names in the player list
+				
 				String[] playerNames = (String[]) message.getData();
 				for (int i = 0; i < playerNames.length; i++) {
-					if (playerNames[i] == null) {
+					if (playerNames[i] != null) {
 						playerList.get(i).setName(playerNames[i]);
 					}
 				}
@@ -522,8 +546,7 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				// Send join message
 				CardGameMessage joinMessage = new CardGameMessage(CardGameMessage.JOIN, -1, playerName);
 				sendMessage(joinMessage);
-				table.repaint();
-				
+
 				break;
 				
 			case CardGameMessage.JOIN:
@@ -534,6 +557,9 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				if (joiningPlayerID == playerID) {
 					CardGameMessage readyMessage = new CardGameMessage(CardGameMessage.READY, -1, null);
 					sendMessage(readyMessage);
+				}
+				else {
+					table.printMsg(joiningPlayerName + " joins the game.");					
 				}
 				break;
 				
@@ -547,15 +573,21 @@ public class BigTwoClient implements CardGame, NetworkGame{
 				table.printMsg(quittingPlayerName + " leaves the game.");
 				playerList.get(quittingPlayerID).setName("");
 				for (int i = 0; i < 4; i++) {
-					if (playerList.get(i).getName() != "") {
+					if (playerList.get(i).getName() != null && playerList.get(i).getName() != "") {
 						table.printMsg(playerList.get(i).getName() + " is ready.");
 					}
+					playerList.get(i).removeAllCards();
 				}
+				
+				CardGameMessage readyMessage = new CardGameMessage(CardGameMessage.READY, -1, null);
+				sendMessage(readyMessage);
+				table.repaint();
 				break;
 				
 			case CardGameMessage.READY:
 				int readyPlayerID = message.getPlayerID();
 				table.printMsg(playerList.get(readyPlayerID).getName() + " is ready.");
+				table.repaint();
 				break;
 			
 			case CardGameMessage.START:
@@ -594,9 +626,7 @@ public class BigTwoClient implements CardGame, NetworkGame{
 			ois = new ObjectInputStream(sock.getInputStream());
 				while ((message = (CardGameMessage) ois.readObject()) != null) {
 					System.out.println("read " + message);
-					System.out.println("read " + message.getType());
 					parseMessage(message);
-					
 				}
 			} catch (Exception ex) {
 				ex.printStackTrace();
